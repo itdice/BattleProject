@@ -1,0 +1,5 @@
+### Clion project base template
+# Clion project files
+.idea
+cmake-build-debug
+cmake-build-release
