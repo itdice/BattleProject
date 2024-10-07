@@ -1,6 +1,3 @@
-//
-// Created by KBJ on 2024-10-07.
-//
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -8,7 +5,7 @@
 #include <string>
 #include <locale>
 #include <codecvt>
-#include "bridge.h"
+#include "libs/bridge.h"
 #include <queue>
 using namespace std;
 
@@ -25,9 +22,13 @@ struct Node
 {
     int y;
     int x;
-    vector<pair<int,int>> path;
+    vector<pair<int, int>> path;
 };
 
+// 0 : 우 
+// 1: 좌
+// 2: 상
+// 3: 하
 int dy[4] = { 0, 0, 1, -1 };
 int dx[4] = { 1, -1, 0, 0 };
 
@@ -58,7 +59,7 @@ void parse_data(string game_data) {
     header >> map_height >> map_width >> num_of_allies >> num_of_enemies >> num_of_codes;
 
     // 맵 정보를 읽어오기
-    map_data = new string*[map_height];
+    map_data = new string * [map_height];
     for (int i = 0; i < map_height; ++i) {
         map_data[i] = new string[map_width];
     }
@@ -123,7 +124,7 @@ int* find_my_position() {
     return my_position;
 }
 
-void find_garage(vector<pair<int,int>>& g) {
+void find_garage(vector<pair<int, int>>& g) {
 
     for (int i = 0; i < map_height; ++i) {
         for (int j = 0; j < map_width; ++j) {
@@ -138,7 +139,7 @@ void find_garage(vector<pair<int,int>>& g) {
 }
 //int map_height, map_width, num_of_allies, num_of_enemies, num_of_codes;
 
-vector<pair<int,int>> bfs(int* my_pos, string goal )
+vector<pair<int, int>> bfs(int* my_pos, string goal)
 {
     queue<Node> q;
     q.push({ my_pos[0], my_pos[1], {} });
@@ -167,7 +168,7 @@ vector<pair<int,int>> bfs(int* my_pos, string goal )
             if (visited[ny][nx] == 1) continue;
 
             vector<pair<int, int>> temp = now.path;
-             visited[ny][nx] = 1;
+            visited[ny][nx] = 1;
             temp.push_back({ ny, nx });
             q.push({ ny, nx, temp });
         }
@@ -175,7 +176,7 @@ vector<pair<int,int>> bfs(int* my_pos, string goal )
 
 }
 
-void next_dir(string& result, vector<pair<int,int>>& path, int* my_position, int cnt)
+void next_dir(string& result, vector<pair<int, int>>& path, int* my_position, int cnt)
 {
     if (my_position[0] + 1 == path[cnt].first && my_position[1] == path[cnt].second)
     {
@@ -215,7 +216,7 @@ string sol_code(string& code)
     for (int i = 0; i < num_of_codes; i++)
     {
         int curr_c = code[i] - 'A';
-        curr_c = (curr_c + pivot) % (cri+1);
+        curr_c = (curr_c + pivot) % (cri + 1);
 
         result += curr_c + 'A';
     }
@@ -228,11 +229,10 @@ int main() {
     string game_data = init(nickname);
 
     bool start_game = false;
-    bool g_clr = false;
     vector<pair<int, int>> path;
     vector<pair<int, int>> garage;
     int cnt = 0;
-    int bullet = 0;
+    int n_bomb = 0;
 
     cout << "START! " << cnt << '\n';
 
@@ -257,6 +257,8 @@ int main() {
             if (ally.first == "A") {
                 cout << "A (내 탱크) - 체력: " << value[0] << ", 방향: " << value[1]
                     << ", 보유한 일반 포탄: " << value[2] << "개, 보유한 대전차 포탄: " << value[3] << "개\n";
+
+                n_bomb = stoi(value[3]);
             }
             else if (ally.first == "H") {
                 cout << "H (아군 포탑) - 체력: " << value[0] << "\n";
@@ -288,8 +290,7 @@ int main() {
 
         if (!start_game)
         {
-            find_garage(garage);
-            if (!garage.empty())
+            if (n_bomb < 3)
             {
                 path = bfs(my_position, "F");
             }
@@ -297,25 +298,48 @@ int main() {
             else
             {
                 path = bfs(my_position, "X");
-                g_clr = true;
             }
 
             start_game = true;
         }
 
-        if (cnt < path.size()-1)
+        if (cnt < path.size() - 1)
         {
             next_dir(output, path, my_position, cnt);
 
-            if (map_data[path[cnt].first][path[cnt].second] == "E1" ||
-                map_data[path[cnt].first][path[cnt].second] == "E2" ||
-                map_data[path[cnt].first][path[cnt].second] == "E3")
+            for (int k = 0; k < 4; k++)
             {
-                cnt--;
-                output = "F S";
+                int ny = path[cnt - 1].first + dy[k];
+                int nx = path[cnt - 1].second + dx[k];
+
+                if (ny >= map_height || ny < 0 || nx >= map_width || nx < 0) continue;
+
+                if (map_data[path[cnt].first][path[cnt].second] == "E1" ||
+                    map_data[path[cnt].first][path[cnt].second] == "E2" ||
+                    map_data[path[cnt].first][path[cnt].second] == "E3")
+                {
+                    if (k == 0) // 0 : 우 
+                    {
+                        output = "R F";
+                    }
+                    else if (k == 1) // 1: 좌
+                    {
+                        output = "L F";
+                    }
+
+                    else if (k == 2) // 2: 상
+                    {
+                        output = "U F";
+                    }
+
+                    else // 3: 하
+                        output = "D F";
+                    cnt--;
+                    break;
+                }
             }
 
-            else if (map_data[path[cnt].first][path[cnt].second] == "A1" ||
+            if (map_data[path[cnt].first][path[cnt].second] == "A1" ||
                 map_data[path[cnt].first][path[cnt].second] == "A2" ||
                 map_data[path[cnt].first][path[cnt].second] == "A3"
                 )
@@ -329,76 +353,47 @@ int main() {
 
         // 일반 포탄: (dir) F M
         // 대전차 포탄: (dir) F S
+
+        // 목적지 도착 (창고 or 포탑)
         else
         {
             // 창고 도착
-            if (!g_clr)
-            {
-                if (bullet < 3 && cnt == path.size() - 1) // 3번 충전
-                {
-                    output = sol_code(codes[0]);
-                    game_data = submit(output);
-                    bullet++;
-                    continue;
-                }
 
-                else if(bullet >= 3 && cnt == path.size() - 1)
+            if (n_bomb < 3 && cnt == path.size() - 1) // 3번 충전
+            {
+                if (n_bomb == 3)
                 {
-                    g_clr = true;
                     path.pop_back();
+
                     my_position[0] = (*path.rbegin()).first;
                     my_position[1] = (*path.rbegin()).second;
 
-                    cnt = 0;
-                    path = bfs(my_position, "X");
-                    next_dir(output, path, my_position, cnt);
-                    cnt++;
-
-                    game_data = submit(output);
-                    continue;
+                    start_game = false;
                 }
+
+                output = sol_code(codes[0]);
+                game_data = submit(output);
+
+                continue;
             }
+            
 
-            if (!path.empty()) {  // path가 비어있지 않은지 확인
-                string last_result = "";
+            string last_result = "";
 
-                my_position[0] = (path[cnt-1]).first;
-                my_position[1] = (path[cnt-1]).second;
+            my_position[0] = (path[cnt - 1]).first;
+            my_position[1] = (path[cnt - 1]).second;
 
-                cout << my_position[0] << ' ' << my_position[1] << '\n';
-
-                next_dir(last_result, path, my_position, cnt);
-                cout << last_result << '\n';
-
-                last_result.pop_back();
-                output = last_result;
-                output += "F M";
-            }
-            else {
-                cout << "ERROR: Path is empty!" << endl;
-            }
-            // 적 포탑 앞
-            /*string last_result = "";
-            my_position[0] = (*path.rbegin()).first;
-            my_position[1] = (*path.rbegin()).second;
+            cout << my_position[0] << ' ' << my_position[1] << '\n';
 
             next_dir(last_result, path, my_position, cnt);
+            cout << last_result << '\n';
+
             last_result.pop_back();
             output = last_result;
-            output += "F M";*/
-
-            // 다음 스테이지 초기화
-            /*cnt = 0;
-            path.clear();
-            garage.clear();
-            start_game = false;
-            g_clr = false;*/
+            output += "F M";
         }
 
         delete[] my_position;
-
-        // while 문의 끝에는 다음 코드가 필수로 존재하여야 함
-        // output에 담긴 값은 submit 함수를 통해 배틀싸피 메인 프로그램에 전달
         game_data = submit(output);
     }
 
