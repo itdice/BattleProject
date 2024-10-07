@@ -365,7 +365,13 @@ int main() {
 		}
 
 		count = min(allies["A"][2][0] - '0', allies["A"][3][0] - '0');
-		if (count >= num_of_enemies - 1)
+		int required = 0;
+		for (const auto &enemy: enemies) {
+			string *value = enemy.second;
+			required += stoi(value[0]) / 10;
+		}
+
+		if (count >= required)
 			isFact = true;
 		else
 			isFact = false;
