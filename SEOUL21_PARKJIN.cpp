@@ -54,8 +54,6 @@ struct Target {
 
 vector<Pos> MOVE = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}};
 
-string utf8_encode(const wstring& wstr);
-
 string** map_data;  // 맵 정보. 예) map_data[0][1] - [0, 1]의 지형/지물
 map<string, string*> allies;  // 아군 정보. 예) allies.at("A") - 플레이어 본인의 정보
 map<string, string*> enemies;  // 적군 정보. 예) enemies.at("X") - 적 포탑의 정보
@@ -79,7 +77,7 @@ void free_memory() {
 }
 
 // 입력 데이터를 파싱하여 변수에 저장
-void parse_data(string game_data) {
+void parse_data(const string& game_data) {
 	// 입력 데이터를 문자열 스트림에 담기
 	istringstream iss(game_data);
 	string line;
@@ -111,8 +109,8 @@ void parse_data(string game_data) {
 		string ally_name;
 		ally_stream >> ally_name;
 
-		string* ally_data = new string[4];
-		for (int j = 0; ally_stream >> ally_data[j]; ++j);
+		auto* ally_data = new string[4];
+		for (int j = 0; ally_stream >> ally_data[j]; ++j) {}
 
 		allies[ally_name] = ally_data;
 	}
@@ -125,8 +123,8 @@ void parse_data(string game_data) {
 		string enemy_name;
 		enemy_stream >> enemy_name;
 
-		string* enemy_data = new string[2];  // 예시로 2개의 데이터를 저장
-		for (int j = 0; enemy_stream >> enemy_data[j]; ++j);
+		auto* enemy_data = new string[2];  // 예시로 2개의 데이터를 저장
+		for (int j = 0; enemy_stream >> enemy_data[j]; ++j) {}
 
 		enemies[enemy_name] = enemy_data;
 	}
@@ -313,7 +311,7 @@ string decrypt() {
 }
 
 int main() {
-	wstring nickname = L"PJ";
+	wstring nickname = L"서울21_박진";
 	string game_data = init(nickname);
 	int count = 0;
 	bool isFact = false;
@@ -442,35 +440,35 @@ int main() {
 		bool isFired = false;
 
 		// 미사일 발사가 필요한 경우 확인
-		for (const auto &target: allTarget) {
-			if (target.type == ENEMY_TOP && allies["A"][2] > "0") {
+		for (const auto &value: allTarget) {
+			if (value.type == ENEMY_TOP && allies["A"][2] > "0") {
 				isFired = true;
-				if (target.dir == UP) {
+				if (value.dir == UP) {
 					output = "U F M";
 				}
-				else if (target.dir == DOWN) {
+				else if (value.dir == DOWN) {
 					output = "D F M";
 				}
-				else if (target.dir == LEFT) {
+				else if (value.dir == LEFT) {
 					output = "L F M";
 				}
-				else if (target.dir == RIGHT) {
+				else if (value.dir == RIGHT) {
 					output = "R F M";
 				}
 				break;
 			}
-			else if (target.type[0] == 'E' && allies["A"][3] > "0") {
+			else if (value.type[0] == 'E' && allies["A"][3] > "0") {
 				isFired = true;
-				if (target.dir == UP) {
+				if (value.dir == UP) {
 					output = "U F S";
 				}
-				else if (target.dir == DOWN) {
+				else if (value.dir == DOWN) {
 					output = "D F S";
 				}
-				else if (target.dir == LEFT) {
+				else if (value.dir == LEFT) {
 					output = "L F S";
 				}
-				else if (target.dir == RIGHT) {
+				else if (value.dir == RIGHT) {
 					output = "R F S";
 				}
 				break;

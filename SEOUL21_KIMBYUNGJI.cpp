@@ -225,7 +225,7 @@ string sol_code(string& code)
 }
 
 int main() {
-    wstring nickname = L"KBJ";
+    wstring nickname = L"서울21_김병지";
     string game_data = init(nickname);
 
     bool start_game = false;
