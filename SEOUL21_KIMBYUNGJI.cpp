@@ -206,6 +206,43 @@ void next_dir(string& result, vector<pair<int, int>>& path, int* my_position, in
     cout << "경로" << path[cnt].first << ' ' << path[cnt].second << '\n';
 }
 
+void attackEnemy(int* my_position, bool& isAttack, string& output)
+{
+    for (int k = 0; k < 4; k++)
+    {
+        int ny = my_position[0] + dy[k];
+        int nx = my_position[1] + dx[k];
+
+        if (ny >= map_height || ny < 0 || nx >= map_width || nx < 0) continue;
+
+        if (map_data[ny][nx] == "E1" ||
+            map_data[ny][nx] == "E2" ||
+            map_data[ny][nx] == "E3")
+        {
+            cout << "ENEMY Found!\n";
+            if (k == 0) // 0 : 우 
+            {
+                output = "R F S";
+            }
+            else if (k == 1) // 1: 좌
+            {
+                output = "L F S";
+            }
+
+            else if (k == 2) // 2: 상
+            {
+                output = "U F S";
+            }
+
+            else // 3: 하
+                output = "D F S";
+
+            isAttack = true;
+            break;
+        }
+    }
+}
+
 string sol_code(string& code)
 {
     int cri = 'Z' - 'A';
@@ -309,38 +346,7 @@ int main() {
 
             bool isAttack = false;
 
-            for (int k = 0; k < 4; k++)
-            {
-                int ny = path[cnt].first + dy[k];
-                int nx = path[cnt].second + dx[k];
-
-                if (ny >= map_height || ny < 0 || nx >= map_width || nx < 0) continue;
-
-                if (map_data[ny][nx] == "E1" ||
-                    map_data[ny][nx] == "E2" ||
-                    map_data[ny][nx] == "E3")
-                {
-                    if (k == 0) // 0 : 우 
-                    {
-                        output = "R F S";
-                    }
-                    else if (k == 1) // 1: 좌
-                    {
-                        output = "L F S";
-                    }
-
-                    else if (k == 2) // 2: 상
-                    {
-                        output = "U F S";
-                    }
-
-                    else // 3: 하
-                        output = "D F S";
-
-                    isAttack = true;
-                    break;
-                }
-            }
+            attackEnemy(my_position, isAttack, output);
 
             if (!isAttack && map_data[path[cnt].first][path[cnt].second] == "A1" ||
                 map_data[path[cnt].first][path[cnt].second] == "A2" ||
@@ -381,8 +387,14 @@ int main() {
                 continue;
             }
 
+            bool isEnemy = false;
 
-            if (!path.empty())
+            my_position = find_my_position();
+
+            attackEnemy(my_position, isEnemy, output);
+
+
+            if (!isEnemy && !path.empty())
             {
                 string last_result = "";
 
@@ -400,6 +412,7 @@ int main() {
             }
 
         }
+        cout << "아웃풋: " << output << '\n';
 
         delete[] my_position;
         game_data = submit(output);
