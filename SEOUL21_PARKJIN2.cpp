@@ -5,6 +5,7 @@
 #include <sstream>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <queue>
 #include <string>
 #include <locale>
@@ -254,6 +255,22 @@ string nextMovement(const Pos target) {
 		}
 	}
 
+	// allies["A"][0]를 통해 내 체력 확인
+	if (allies["A"][0][0] <= '2') {
+		for (const auto& enemy : enemies) {
+			if (enemy.first[0] == 'E') {
+				Pos enemyPos = findPosition(enemy.first);
+
+				for (const auto &dir: MOVE) {
+					Pos next = {enemyPos.y + dir.y, enemyPos.x + dir.x};
+					if (0 <= next.y && next.y < map_height && 0 <= next.x && next.x < map_width) {
+						moveCost[next.y][next.x] = MAX_INT;
+					}
+				}
+			}
+		}
+	}
+
 	matrix<bool> isVisited(map_height, vector<bool>(map_width, false));
 	isVisited[target.y][target.x] = true;
 	isVisited[lastTankPos.y][lastTankPos.x] = true;
@@ -395,10 +412,23 @@ int main() {
 		}
 		int minDistance = map_height + map_width;
 
+		// Track previous positions of enemies
+		unordered_map<string, Pos> previousPositions;
+
 		// Check for enemy tanks first, but move to facility if antitank ammo is insufficient
 		for (const auto& enemy : enemies) {
 			Pos enemyPos = findClosestPosition(enemy.first);
 			int distance = abs(enemyPos.y - myTankPos.y) + abs(enemyPos.x - myTankPos.x);
+
+			// Adjust target if enemy is moving
+			if (enemy.first[0] == 'E' && previousPositions.find(enemy.first) != previousPositions.end()) {
+				Pos prevPos = previousPositions[enemy.first];
+				// Calculate the direction of movement
+				Pos moveDir = {enemyPos.y - prevPos.y, enemyPos.x - prevPos.x};
+				// Calculate the new target positioning 2 steps ahead in the movement direction
+				enemyPos = {enemyPos.y + 2 * moveDir.y, enemyPos.x + 2 * moveDir.x};
+			}
+
 			if (enemy.first != ENEMY_TOP && distance < minDistance) {
 				if (isFact) {
 					target = enemyPos;
@@ -408,6 +438,7 @@ int main() {
 					target = facilityPos;
 					break;
 				}
+				previousPositions[enemy.first] = enemyPos; // Update previous position
 			}
 		}
 
@@ -427,6 +458,10 @@ int main() {
 					}
 				}
 			}
+		}
+
+		if (strtol(allies["A"][0].c_str(), nullptr, 10) <= 20 && map_data[target.y][target.x][0] == 'E') {
+			target = findClosestPosition("X");
 		}
 
 		// If no valid enemy target found
@@ -461,7 +496,7 @@ int main() {
 
 			cout << "Map with Path:" << endl;
 			for (const auto& row : mapCopy) {
-				for (char cell : row) {
+				for (const char cell : row) {
 					cout << cell << ' ';
 				}
 				cout << endl;
@@ -474,6 +509,26 @@ int main() {
 		bool isFired = false;
 
 		// 미사일 발사가 필요한 경우 확인
+		if (strtol(allies["A"][0].c_str(), nullptr, 10) > 20) {
+			for (const auto &value: allTarget) {
+				if (value.type[0] == 'E' && allies["A"][3] > "0") {
+					isFired = true;
+					if (value.dir == UP) {
+						output = "U F S";
+					}
+					else if (value.dir == DOWN) {
+						output = "D F S";
+					}
+					else if (value.dir == LEFT) {
+						output = "L F S";
+					}
+					else if (value.dir == RIGHT) {
+						output = "R F S";
+					}
+					break;
+				}
+			}
+		}
 		for (const auto &value: allTarget) {
 			if (value.type == ENEMY_TOP && allies["A"][2] > "0") {
 				isFired = true;
@@ -488,22 +543,6 @@ int main() {
 				}
 				else if (value.dir == RIGHT) {
 					output = "R F M";
-				}
-				break;
-			}
-			else if (value.type[0] == 'E' && allies["A"][3] > "0") {
-				isFired = true;
-				if (value.dir == UP) {
-					output = "U F S";
-				}
-				else if (value.dir == DOWN) {
-					output = "D F S";
-				}
-				else if (value.dir == LEFT) {
-					output = "L F S";
-				}
-				else if (value.dir == RIGHT) {
-					output = "R F S";
 				}
 				break;
 			}
