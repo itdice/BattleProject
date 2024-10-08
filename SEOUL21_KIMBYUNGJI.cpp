@@ -322,20 +322,20 @@ int main() {
                 {
                     if (k == 0) // 0 : 우 
                     {
-                        output = "R F";
+                        output = "R F S";
                     }
                     else if (k == 1) // 1: 좌
                     {
-                        output = "L F";
+                        output = "L F S";
                     }
 
                     else if (k == 2) // 2: 상
                     {
-                        output = "U F";
+                        output = "U F S";
                     }
 
                     else // 3: 하
-                        output = "D F";
+                        output = "D F S";
 
                     isAttack = true;
                     break;
