@@ -150,7 +150,7 @@ int min_ap = 3;
 int ap = 0;
 int he = 0;
 
-node my_position, target_position;
+node my_position, target_position, enemy_gun;
 char target_type;
 // mode 0 search for target
 // mode 1 serach route for target
@@ -211,7 +211,6 @@ void floodfill(node start, int mode)
 
 			if ((mode == 0) && (datum == 'E'))
 			{
-				// 어차피 질것같으면, 넘어가고 다른 타켓을 잡자.
 				cout << "next dist is: " << next.dist << endl;
 				if (((next.dist % 2) == 1) || (next.dist > 5))
 				{
@@ -221,10 +220,11 @@ void floodfill(node start, int mode)
 					cout << "target set! type is: " << datum << endl;
 					return;
 				}
-				// 돌아돌아 해당 위치를 다시 파악하게 될 수 있기 때문에, 해당 위치를 아예 block 해버리자.
-				map_data[next.x][next.y][0] = 'R';
-				ff_map[next.x + PAD][next.y + PAD] = -1;
-				cout << "can't win. search another target." << endl;
+				// 어차피 질것같으면, 그냥 포탑으로 타케팅 하자.
+				cout << "can't win. set eneymy gun to target." << endl;
+				target_position = enemy_gun;
+				target_type = 'X';
+				return;
 			}
 
 			// 아예 갈 수 없는 곳.
@@ -336,9 +336,17 @@ int get_dist(node a, node b)
 	return pow(a.x - b.x, 2) + pow(a.y - b.y, 2);
 }
 
+bool operator==(const node &a, const node &b)
+{
+	return (a.x == b.x) && (a.y == b.y);
+}
+
 bool check_danger_zone(node search_point)
 {
 	for(int i = 0; i < enemy_tanks_stack; i++){
+		if(target_position == enemy_tanks[i]){
+			continue;
+		}
 		if(get_dist(search_point, enemy_tanks[i]) < 4){
 			return true;
 		}
@@ -371,8 +379,8 @@ string search_n_destroy(node cur)
 
 		// 갈 수 없는 곳이면 패스.
 		if(next_ff_value == -1) continue;
-		// 위험한 곳이고, 적전차가 타켓된게 아니라면, 피하자.
-		if(check_danger_zone(next) && (target_type != 'E')) continue;
+		// 위험한 곳이면 피하자.
+		if(check_danger_zone(next)) continue;
 
 		// 첫 데이터는 그냥 넣자.
 		if (record == -1)
@@ -425,6 +433,10 @@ int main()
 				if (map_data[i][j][0] == 'E')
 				{
 					enemy_tanks[enemy_tanks_stack++] = {i, j};
+				}
+				if (map_data[i][j] == "X")
+				{
+					enemy_gun = {i, j};
 				}
 			}
 			cout << endl;
