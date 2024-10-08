@@ -208,13 +208,17 @@ void floodfill(node start, int mode)
 			{
 				// 어차피 질것같으면, 넘어가고 다른 타켓을 잡자.
 				cout << "next dist is: " << next.dist << endl;
-				cout << "((next.dist % 2) == 0): " << ((next.dist % 2) == 0) << endl;
 				if (((next.dist % 2) == 1) || (next.dist > 5))
 				{
 					target_position = next;
+					cout << "we can win!!" << endl;
 					cout << "target set! type is: " << datum << endl;
 					return;
 				}
+				// 돌아돌아 해당 위치를 다시 파악하게 될 수 있기 때문에, 해당 위치를 아예 block 해버리자.
+				map_data[next.x][next.y][0] = 'R';
+				ff_map[next.x + PAD][next.y + PAD] = -1;
+				cout << "can't win. search another target." << endl;
 			}
 
 			// 아예 갈 수 없는 곳.
@@ -442,6 +446,7 @@ int main()
 		string output = "S"; // 알고리즘 결괏값이 없을 경우를 대비하여 초기값을 S로 설정
 
 		floodfill({my_position.x, my_position.y, 0}, 0);
+		cout << "target position is: " << target_position.x << ", " << target_position.y << endl;
 		floodfill({target_position.x, target_position.y, 0}, 1);
 		output = search_n_destroy(my_position);
 		cout << "output is " << output << endl;
