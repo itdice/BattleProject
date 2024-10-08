@@ -156,25 +156,19 @@ node my_position, target_position;
 void floodfill(node start, int mode)
 {
 	// init
-	bool visited[N][N];
 	for (int i = 0; i < N; i++)
-	{
 		for (int j = 0; j < N; j++)
-		{
 			ff_map[i][j] = -1;
-			visited[i][j] = false;
-		}
-	}
 
 	deque<node> q;
 	q.push_back(start);
-	visited[start.x][start.y] = true;
 	ff_map[start.x + PAD][start.y + PAD] = 0;
 
 	while (!q.empty())
 	{
 		node cur = q.front();
 		q.pop_front();
+
 		for (int i = 0; i < 4; i++)
 		{
 			node next = {cur.x + dx[i], cur.y + dy[i], cur.dist + 1};
@@ -183,7 +177,7 @@ void floodfill(node start, int mode)
 				continue;
 			if ((next.y >= map_width) || (next.y < 0))
 				continue;
-			if (visited[next.x][next.y])
+			if((ff_map[next.x + PAD][next.y + PAD] != -1) && (ff_map[next.x + PAD][next.y + PAD] <= next.dist))
 				continue;
 			char datum = map_data[next.x][next.y][0];
 
@@ -231,8 +225,7 @@ void floodfill(node start, int mode)
 				datum == 'F' ||
 				datum == 'H' ||
 				datum == 'A' ||
-				datum == 'E'
-				)
+				datum == 'E')
 				continue;
 
 			// 포탄이 남아 있어야 경로 개척이 가능하다.
@@ -244,7 +237,6 @@ void floodfill(node start, int mode)
 
 			q.push_back(next);
 			ff_map[next.x + PAD][next.y + PAD] = next.dist;
-			visited[next.x][next.y] = true;
 		}
 	}
 
@@ -252,7 +244,17 @@ void floodfill(node start, int mode)
 	{
 		for (int j = 0; j <= map_height; j++)
 		{
-			cout << ff_map[i][j] << ' ';
+			if (ff_map[i][j] == -1)
+			{
+				cout << "XX ";
+			}
+			else if (ff_map[i][j] < 10){
+				cout << "_" << ff_map[i][j] << ' ';
+			}
+			else
+			{
+				cout << ff_map[i][j] << ' ';
+			}
 		}
 		cout << endl;
 	}
