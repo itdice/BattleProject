@@ -7,7 +7,6 @@
 #include <locale>
 #include <codecvt>
 #include "libs/bridge.h"
-#include <queue>
 
 using namespace std;
 
@@ -196,7 +195,7 @@ void floodfill(node start, int mode)
 			}
 
 			// 타겟 선정 단계이고, 포탄이 부족하다면 F를 타켓으로 하자.
-			if ((mode == 0) && (datum == 'F') && ((ap < (min_ap * num_of_enemies)) || (he < min_he)))
+			if ((mode == 0) && (datum == 'F') && ((ap < min_ap) || (he < min_he)))
 			{
 				target_position = next;
 				cout << "target set! type is: " << datum << endl;
@@ -362,7 +361,7 @@ string search_n_destroy(node cur)
 
 int main()
 {
-	wstring nickname = L"SEOUL21_LEESOONYONG";
+	wstring nickname = L"v6";
 	string game_data = init(nickname);
 
 	// while 반복문: 배틀싸피 메인 프로그램과 클라이언트(이 코드)가 데이터를 계속해서 주고받는 부분
@@ -417,15 +416,17 @@ int main()
 			string *value = enemy.second;
 			if (enemy.first == "X")
 			{
-				min_he += str_to_int(value[0]);
+				min_he += (str_to_int(value[0]) / 10);
 				cout << "X (적군 포탑) - 체력: " << value[0] << "\n";
 			}
 			else
 			{
-				min_ap += str_to_int(value[0]);
+				min_ap += (str_to_int(value[0]) / 10);
 				cout << enemy.first << " (적군 탱크) - 체력: " << value[0] << "\n";
 			}
 		}
+		cout << "min_ap is: " << min_ap << endl;
+		cout << "min_he is: " << min_he << endl;
 
 		cout << "\n[암호문 정보] (암호문 수: " << num_of_codes << ")\n";
 		for (int i = 0; i < num_of_codes; ++i)
