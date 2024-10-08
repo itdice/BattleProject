@@ -151,6 +151,7 @@ int ap = 0;
 int he = 0;
 
 node my_position, target_position, enemy_gun;
+int my_hp;
 char target_type;
 // mode 0 search for target
 // mode 1 serach route for target
@@ -212,7 +213,9 @@ void floodfill(node start, int mode)
 			if ((mode == 0) && (datum == 'E'))
 			{
 				cout << "next dist is: " << next.dist << endl;
-				if (((next.dist % 2) == 1) || (next.dist > 5))
+				// 유리하면 타겟으로 선정.
+				// 설령 불리해도, 체력이 남았으면 타겟으로 선정.
+				if (((next.dist % 2) == 1) || (next.dist > 5) || (my_hp > 10))
 				{
 					target_position = next;
 					target_type = 'E';
@@ -379,8 +382,8 @@ string search_n_destroy(node cur)
 
 		// 갈 수 없는 곳이면 패스.
 		if(next_ff_value == -1) continue;
-		// 위험한 곳이면 피하자.
-		if(check_danger_zone(next)) continue;
+		// 위험한 곳이고, 내 체력이 적으면 사리자.
+		if(check_danger_zone(next) && (my_hp < 11)) continue;
 
 		// 첫 데이터는 그냥 넣자.
 		if (record == -1)
@@ -450,6 +453,7 @@ int main()
 			{
 				cout << "A (내 탱크) - 체력: " << value[0] << ", 방향: " << value[1]
 					 << ", 보유한 일반 포탄: " << value[2] << "개, 보유한 대전차 포탄: " << value[3] << "개\n";
+				my_hp = str_to_int(value[0]);
 				ap = str_to_int(value[3]);
 				he = str_to_int(value[2]);
 			}
