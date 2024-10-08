@@ -1,4 +1,7 @@
-﻿#include <iostream>
+//
+// Created by LSY on 2024-10-07.
+//
+#include <iostream>
 #include <deque>
 #include <sstream>
 #include <vector>
@@ -6,8 +9,8 @@
 #include <string>
 #include <locale>
 #include <codecvt>
-#include <math.h>
-#include "libs/bridge.h"
+#include <cmath>
+#include "bridge.h"
 
 using namespace std;
 
@@ -514,3 +517,4 @@ int main()
 	close();
 	return 0;
 }
+
