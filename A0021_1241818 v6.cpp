@@ -6,6 +6,7 @@
 #include <string>
 #include <locale>
 #include <codecvt>
+#include <math.h>
 #include "libs/bridge.h"
 
 using namespace std;
@@ -149,32 +150,28 @@ int min_ap = 3;
 int ap = 0;
 int he = 0;
 
-node my_position, target_position;
+node my_position, target_position, enemy_gun;
+int my_hp;
+char target_type;
 // mode 0 search for target
 // mode 1 serach route for target
 // mode 99 debug mode. for F.
 void floodfill(node start, int mode)
 {
 	// init
-	bool visited[N][N];
 	for (int i = 0; i < N; i++)
-	{
 		for (int j = 0; j < N; j++)
-		{
 			ff_map[i][j] = -1;
-			visited[i][j] = false;
-		}
-	}
 
 	deque<node> q;
 	q.push_back(start);
-	visited[start.x][start.y] = true;
 	ff_map[start.x + PAD][start.y + PAD] = 0;
 
 	while (!q.empty())
 	{
 		node cur = q.front();
 		q.pop_front();
+
 		for (int i = 0; i < 4; i++)
 		{
 			node next = {cur.x + dx[i], cur.y + dy[i], cur.dist + 1};
@@ -183,7 +180,7 @@ void floodfill(node start, int mode)
 				continue;
 			if ((next.y >= map_width) || (next.y < 0))
 				continue;
-			if (visited[next.x][next.y])
+			if((ff_map[next.x + PAD][next.y + PAD] != -1) && (ff_map[next.x + PAD][next.y + PAD] <= next.dist))
 				continue;
 			char datum = map_data[next.x][next.y][0];
 
@@ -191,6 +188,7 @@ void floodfill(node start, int mode)
 			if ((mode == 99) && (datum == 'F'))
 			{
 				target_position = next;
+				target_type = 'F';
 				return;
 			}
 
@@ -198,6 +196,7 @@ void floodfill(node start, int mode)
 			if ((mode == 0) && (datum == 'F') && ((ap < min_ap) || (he < min_he)))
 			{
 				target_position = next;
+				target_type = 'F';
 				cout << "target set! type is: " << datum << endl;
 				return;
 			}
@@ -206,21 +205,29 @@ void floodfill(node start, int mode)
 			if ((mode == 0) && (datum == 'X'))
 			{
 				target_position = next;
+				target_type = 'X';
 				cout << "target set! type is: " << datum << endl;
 				return;
 			}
 
 			if ((mode == 0) && (datum == 'E'))
 			{
-				// 어차피 질것같으면, 넘어가고 다른 타켓을 잡자.
 				cout << "next dist is: " << next.dist << endl;
-				cout << "((next.dist % 2) == 0): " << ((next.dist % 2) == 0) << endl;
-				if (((next.dist % 2) == 1) || (next.dist > 5))
+				// 유리하면 타겟으로 선정.
+				// 설령 불리해도, 체력이 남았으면 타겟으로 선정.
+				if (((next.dist % 2) == 1) || (next.dist > 5) || (my_hp > 10))
 				{
 					target_position = next;
+					target_type = 'E';
+					cout << "we can win!!" << endl;
 					cout << "target set! type is: " << datum << endl;
 					return;
 				}
+				// 어차피 질것같으면, 그냥 포탑으로 타케팅 하자.
+				cout << "can't win. set eneymy gun to target." << endl;
+				target_position = enemy_gun;
+				target_type = 'X';
+				return;
 			}
 
 			// 아예 갈 수 없는 곳.
@@ -231,8 +238,7 @@ void floodfill(node start, int mode)
 				datum == 'F' ||
 				datum == 'H' ||
 				datum == 'A' ||
-				datum == 'E'
-				)
+				datum == 'E')
 				continue;
 
 			// 포탄이 남아 있어야 경로 개척이 가능하다.
@@ -244,7 +250,6 @@ void floodfill(node start, int mode)
 
 			q.push_back(next);
 			ff_map[next.x + PAD][next.y + PAD] = next.dist;
-			visited[next.x][next.y] = true;
 		}
 	}
 
@@ -252,7 +257,17 @@ void floodfill(node start, int mode)
 	{
 		for (int j = 0; j <= map_height; j++)
 		{
-			cout << ff_map[i][j] << ' ';
+			if (ff_map[i][j] == -1)
+			{
+				cout << "XX ";
+			}
+			else if (ff_map[i][j] < 10){
+				cout << "_" << ff_map[i][j] << ' ';
+			}
+			else
+			{
+				cout << ff_map[i][j] << ' ';
+			}
 		}
 		cout << endl;
 	}
@@ -297,10 +312,6 @@ string check_target(node search_point, bool tree)
 	{
 		return "M";
 	}
-	if ((datum == 'F') && !tree)
-	{
-		return "F";
-	}
 	if ((datum == 'X') && !tree && (he > 0))
 	{
 		return "M";
@@ -309,10 +320,41 @@ string check_target(node search_point, bool tree)
 	{
 		return "S";
 	}
+	// 먹어야할때만 먹자. 괜히 계속 먹지 말고.
+	if ((datum == 'F') && !tree && ((he < min_he) || (ap < min_ap)))
+	{
+		return "F";
+	}
 	else
 	{
 		return "";
 	}
+}
+
+int enemy_tanks_stack = 0;
+node enemy_tanks[3];
+
+int get_dist(node a, node b)
+{
+	return pow(a.x - b.x, 2) + pow(a.y - b.y, 2);
+}
+
+bool operator==(const node &a, const node &b)
+{
+	return (a.x == b.x) && (a.y == b.y);
+}
+
+bool check_danger_zone(node search_point)
+{
+	for(int i = 0; i < enemy_tanks_stack; i++){
+		if(target_position == enemy_tanks[i]){
+			continue;
+		}
+		if(get_dist(search_point, enemy_tanks[i]) < 4){
+			return true;
+		}
+	}
+	return false;
 }
 
 // 플러드필 맵 기준으로 다음 목적지 설정
@@ -338,12 +380,19 @@ string search_n_destroy(node cur)
 		// printf("next position is %d:%d\n", cur.x + dx[i], cur.y + dy[i]);
 		// printf("value of ff_map_to_gun is: %d\n\n", next_ff_value);
 
-		if ((record == -1) && (next_ff_value != -1))
+		// 갈 수 없는 곳이면 패스.
+		if(next_ff_value == -1) continue;
+		// 위험한 곳이고, 내 체력이 적으면 사리자.
+		if(check_danger_zone(next) && (my_hp < 11)) continue;
+
+		// 첫 데이터는 그냥 넣자.
+		if (record == -1)
 		{
 			min_dist = next_ff_value;
 			record = i;
 		}
-		if ((next_ff_value < min_dist) && (next_ff_value != -1))
+		// 그 다음부터는 최소값을 찾자.
+		if (next_ff_value < min_dist)
 		{
 			min_dist = next_ff_value;
 			record = i;
@@ -367,6 +416,7 @@ int main()
 	// while 반복문: 배틀싸피 메인 프로그램과 클라이언트(이 코드)가 데이터를 계속해서 주고받는 부분
 	while (!game_data.empty())
 	{
+		enemy_tanks_stack = 0;
 		// 자기 차례가 되어 받은 게임정보를 파싱
 		cout << "----입력데이터----\n"
 			 << game_data << "\n----------------\n";
@@ -383,6 +433,14 @@ int main()
 				{
 					my_position = {i, j};
 				}
+				if (map_data[i][j][0] == 'E')
+				{
+					enemy_tanks[enemy_tanks_stack++] = {i, j};
+				}
+				if (map_data[i][j] == "X")
+				{
+					enemy_gun = {i, j};
+				}
 			}
 			cout << endl;
 		}
@@ -395,6 +453,7 @@ int main()
 			{
 				cout << "A (내 탱크) - 체력: " << value[0] << ", 방향: " << value[1]
 					 << ", 보유한 일반 포탄: " << value[2] << "개, 보유한 대전차 포탄: " << value[3] << "개\n";
+				my_hp = str_to_int(value[0]);
 				ap = str_to_int(value[3]);
 				he = str_to_int(value[2]);
 			}
@@ -440,6 +499,7 @@ int main()
 		string output = "S"; // 알고리즘 결괏값이 없을 경우를 대비하여 초기값을 S로 설정
 
 		floodfill({my_position.x, my_position.y, 0}, 0);
+		cout << "target position is: " << target_position.x << ", " << target_position.y << endl;
 		floodfill({target_position.x, target_position.y, 0}, 1);
 		output = search_n_destroy(my_position);
 		cout << "output is " << output << endl;
