@@ -303,10 +303,6 @@ string check_target(node search_point, bool tree)
 	{
 		return "M";
 	}
-	if ((datum == 'F') && !tree)
-	{
-		return "F";
-	}
 	if ((datum == 'X') && !tree && (he > 0))
 	{
 		return "M";
@@ -314,6 +310,11 @@ string check_target(node search_point, bool tree)
 	if (datum == 'E' && !tree && (ap > 0))
 	{
 		return "S";
+	}
+	// 먹어야할때만 먹자. 괜히 계속 먹지 말고.
+	if ((datum == 'F') && !tree && ((he < min_he) || (ap < min_ap)))
+	{
+		return "F";
 	}
 	else
 	{
