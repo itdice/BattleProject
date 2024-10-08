@@ -6,6 +6,7 @@
 #include <string>
 #include <locale>
 #include <codecvt>
+#include <math.h>
 #include "libs/bridge.h"
 
 using namespace std;
@@ -150,6 +151,7 @@ int ap = 0;
 int he = 0;
 
 node my_position, target_position;
+char target_type;
 // mode 0 search for target
 // mode 1 serach route for target
 // mode 99 debug mode. for F.
@@ -185,6 +187,7 @@ void floodfill(node start, int mode)
 			if ((mode == 99) && (datum == 'F'))
 			{
 				target_position = next;
+				target_type = 'F';
 				return;
 			}
 
@@ -192,6 +195,7 @@ void floodfill(node start, int mode)
 			if ((mode == 0) && (datum == 'F') && ((ap < min_ap) || (he < min_he)))
 			{
 				target_position = next;
+				target_type = 'F';
 				cout << "target set! type is: " << datum << endl;
 				return;
 			}
@@ -200,6 +204,7 @@ void floodfill(node start, int mode)
 			if ((mode == 0) && (datum == 'X'))
 			{
 				target_position = next;
+				target_type = 'X';
 				cout << "target set! type is: " << datum << endl;
 				return;
 			}
@@ -211,6 +216,7 @@ void floodfill(node start, int mode)
 				if (((next.dist % 2) == 1) || (next.dist > 5))
 				{
 					target_position = next;
+					target_type = 'E';
 					cout << "we can win!!" << endl;
 					cout << "target set! type is: " << datum << endl;
 					return;
@@ -322,6 +328,24 @@ string check_target(node search_point, bool tree)
 	}
 }
 
+int enemy_tanks_stack = 0;
+node enemy_tanks[3];
+
+int get_dist(node a, node b)
+{
+	return pow(a.x - b.x, 2) + pow(a.y - b.y, 2);
+}
+
+bool check_danger_zone(node search_point)
+{
+	for(int i = 0; i < enemy_tanks_stack; i++){
+		if(get_dist(search_point, enemy_tanks[i]) < 4){
+			return true;
+		}
+	}
+	return false;
+}
+
 // 플러드필 맵 기준으로 다음 목적지 설정
 string search_n_destroy(node cur)
 {
@@ -345,12 +369,19 @@ string search_n_destroy(node cur)
 		// printf("next position is %d:%d\n", cur.x + dx[i], cur.y + dy[i]);
 		// printf("value of ff_map_to_gun is: %d\n\n", next_ff_value);
 
-		if ((record == -1) && (next_ff_value != -1))
+		// 갈 수 없는 곳이면 패스.
+		if(next_ff_value == -1) continue;
+		// 위험한 곳이고, 적전차가 타켓된게 아니라면, 피하자.
+		if(check_danger_zone(next) && (target_type != 'E')) continue;
+
+		// 첫 데이터는 그냥 넣자.
+		if (record == -1)
 		{
 			min_dist = next_ff_value;
 			record = i;
 		}
-		if ((next_ff_value < min_dist) && (next_ff_value != -1))
+		// 그 다음부터는 최소값을 찾자.
+		if (next_ff_value < min_dist)
 		{
 			min_dist = next_ff_value;
 			record = i;
@@ -374,6 +405,7 @@ int main()
 	// while 반복문: 배틀싸피 메인 프로그램과 클라이언트(이 코드)가 데이터를 계속해서 주고받는 부분
 	while (!game_data.empty())
 	{
+		enemy_tanks_stack = 0;
 		// 자기 차례가 되어 받은 게임정보를 파싱
 		cout << "----입력데이터----\n"
 			 << game_data << "\n----------------\n";
@@ -389,6 +421,10 @@ int main()
 				if (map_data[i][j] == "A")
 				{
 					my_position = {i, j};
+				}
+				if (map_data[i][j][0] == 'E')
+				{
+					enemy_tanks[enemy_tanks_stack++] = {i, j};
 				}
 			}
 			cout << endl;
