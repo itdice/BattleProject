@@ -255,23 +255,6 @@ string nextMovement(const Pos target) {
 		}
 	}
 
-	// allies["A"][0]를 통해 내 체력 확인
-	if (strtol(allies["A"][0].c_str(), nullptr, 10) <= 20) {
-		for (const auto& enemy : enemies) {
-			if (enemy.first[0] == 'E') {
-				Pos enemyPos = findPosition(enemy.first);
-
-				for (const auto &dir: MOVE) {
-					Pos next = {enemyPos.y + dir.y, enemyPos.x + dir.x};
-					if (0 <= next.y && next.y < map_height && 0 <= next.x && next.x < map_width &&
-						!(myTankPos.y == next.y && myTankPos.x == next.x)) {
-						moveCost[next.y][next.x] += 1;
-					}
-				}
-			}
-		}
-	}
-
 	vector<vector<int>> isVisited(map_height, vector<int>(map_width, 0));
 	isVisited[target.y][target.x] = 1;
 	isVisited[lastTankPos.y][lastTankPos.x] = 1;
