@@ -231,11 +231,11 @@ void attackEnemy(int* my_position, bool& isAttack, string& output)
 
             else if (k == 2) // 2: 상
             {
-                output = "U F S";
+                output = "D F S";
             }
 
             else // 3: 하
-                output = "D F S";
+                output = "U F S";
 
             isAttack = true;
             break;
