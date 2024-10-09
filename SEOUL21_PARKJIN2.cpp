@@ -185,7 +185,7 @@ Pos depthWayout(const matrix<int>& moveCost, matrix<bool>& isVisited, const Pos 
 	for (const auto& dir : MOVE) {
 		Pos next = {start.y + dir.y, start.x + dir.x};
 		if (0 <= next.y && next.y < map_height && 0 <= next.x && next.x < map_width) {
-			if (moveCost[next.y][next.x] != MAX_INT && moveCost[next.y][next.x] != 0) {
+			if (moveCost[next.y][next.x] != 0) {
 				task.push({next, moveCost[next.y][next.x]});
 			}
 			else if (moveCost[next.y][next.x] == 0) {
@@ -222,7 +222,7 @@ string nextMovement(const Pos target) {
 	Pos lastTankPos = {0, 0};
 	moveCost[myTankPos.y][myTankPos.x] = 0;
 
-	int NMP = allies["A"][2][0] - '0';
+	int NMP = strtol(allies["A"][2].c_str(), nullptr, 10);
 
 	queue<Task> task;
 	task.push({myTankPos, 0});
@@ -256,14 +256,15 @@ string nextMovement(const Pos target) {
 	}
 
 	// allies["A"][0]를 통해 내 체력 확인
-	if (allies["A"][0][0] <= '2') {
+	if (strtol(allies["A"][0].c_str(), nullptr, 10) <= 20) {
 		for (const auto& enemy : enemies) {
 			if (enemy.first[0] == 'E') {
 				Pos enemyPos = findPosition(enemy.first);
 
 				for (const auto &dir: MOVE) {
 					Pos next = {enemyPos.y + dir.y, enemyPos.x + dir.x};
-					if (0 <= next.y && next.y < map_height && 0 <= next.x && next.x < map_width) {
+					if (0 <= next.y && next.y < map_height && 0 <= next.x && next.x < map_width &&
+						!(myTankPos.y == next.y && myTankPos.x == next.x)) {
 						moveCost[next.y][next.x] = MAX_INT;
 					}
 				}
@@ -383,7 +384,8 @@ int main() {
 			cout << codes[i] << endl;
 		}
 
-		count = min(allies["A"][2][0] - '0', allies["A"][3][0] - '0');
+		count = min(strtol(allies["A"][2].c_str(), nullptr, 10),
+			strtol(allies["A"][3].c_str(), nullptr, 10));
 		int required = 0;
 		for (const auto &enemy: enemies) {
 			string *value = enemy.second;
@@ -460,7 +462,8 @@ int main() {
 			}
 		}
 
-		if (strtol(allies["A"][0].c_str(), nullptr, 10) <= 20 && map_data[target.y][target.x][0] == 'E') {
+		if (strtol(allies["A"][0].c_str(), nullptr, 10) <= 20 &&
+			map_data[target.y][target.x][0] == 'E') {
 			target = findClosestPosition("X");
 		}
 
@@ -476,7 +479,7 @@ int main() {
 
 		// Pretty-print the target, current tank position, and the path
 		auto printMapWithPath = [&](const Pos& startPos, const Pos& endPos, const vector<Pos>& visited_path) {
-			vector<vector<char>> mapCopy(map_height, vector<char>(map_width, '.'));
+			matrix<char> mapCopy(map_height, vector<char>(map_width, '.'));
 
 			for (int y = 0; y < map_height; ++y) {
 				for (int x = 0; x < map_width; ++x) {
