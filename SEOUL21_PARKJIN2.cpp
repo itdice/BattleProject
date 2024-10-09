@@ -178,14 +178,14 @@ Pos findClosestPosition(const string& target) {
 	return closestPos;
 }
 
-Pos depthWayout(const matrix<int>& moveCost, matrix<bool>& isVisited, const Pos start) {
+Pos depthWayout(const matrix<int>& moveCost, matrix<int>& isVisited, const Pos start) {
 	Pos result = {-1, -1};
 	priority_queue<Task> task;
 
 	for (const auto& dir : MOVE) {
 		Pos next = {start.y + dir.y, start.x + dir.x};
 		if (0 <= next.y && next.y < map_height && 0 <= next.x && next.x < map_width) {
-			if (moveCost[next.y][next.x] != 0) {
+			if (moveCost[next.y][next.x] != MAX_INT && moveCost[next.y][next.x] != 0) {
 				task.push({next, moveCost[next.y][next.x]});
 			}
 			else if (moveCost[next.y][next.x] == 0) {
@@ -195,20 +195,18 @@ Pos depthWayout(const matrix<int>& moveCost, matrix<bool>& isVisited, const Pos 
 		}
 	}
 
-	int prevCost = MAX_INT;
-	for (int index = 0; index < task.size(); index++) {
+	while (!task.empty()) {
 		Task now = task.top();
 		task.pop();
 
-		if (prevCost < now.cost)
-			break;
-		prevCost = now.cost;
+		if (moveCost[start.y][start.x] <= now.cost)
+			continue;
 
-		if (!isVisited[now.loc.y][now.loc.x]) {
-			isVisited[now.loc.y][now.loc.x] = true;
+		if (isVisited[now.loc.y][now.loc.x] != 1) {
+			isVisited[now.loc.y][now.loc.x] = 1;
 			visited_path.push_back(now.loc); // Save the visited position
 			result = depthWayout(moveCost, isVisited, now.loc);
-			isVisited[now.loc.y][now.loc.x] = false;
+			isVisited[now.loc.y][now.loc.x] = 0;
 		}
 	}
 
@@ -222,7 +220,9 @@ string nextMovement(const Pos target) {
 	Pos lastTankPos = {0, 0};
 	moveCost[myTankPos.y][myTankPos.x] = 0;
 
-	int NMP = strtol(allies["A"][2].c_str(), nullptr, 10);
+	int NMP = 0;
+	if (strtol(allies["A"][0].c_str(), nullptr, 10) > 20)
+		NMP = strtol(allies["A"][2].c_str(), nullptr, 10);
 
 	queue<Task> task;
 	task.push({myTankPos, 0});
@@ -265,16 +265,16 @@ string nextMovement(const Pos target) {
 					Pos next = {enemyPos.y + dir.y, enemyPos.x + dir.x};
 					if (0 <= next.y && next.y < map_height && 0 <= next.x && next.x < map_width &&
 						!(myTankPos.y == next.y && myTankPos.x == next.x)) {
-						moveCost[next.y][next.x] = MAX_INT;
+						moveCost[next.y][next.x] += 1;
 					}
 				}
 			}
 		}
 	}
 
-	matrix<bool> isVisited(map_height, vector<bool>(map_width, false));
-	isVisited[target.y][target.x] = true;
-	isVisited[lastTankPos.y][lastTankPos.x] = true;
+	vector<vector<int>> isVisited(map_height, vector<int>(map_width, 0));
+	isVisited[target.y][target.x] = 1;
+	isVisited[lastTankPos.y][lastTankPos.x] = 1;
 
 	visited_path.clear();
 	Pos nextPos = depthWayout(moveCost, isVisited, lastTankPos);
@@ -384,13 +384,21 @@ int main() {
 			cout << codes[i] << endl;
 		}
 
+		//=========================================================
+
 		count = min(strtol(allies["A"][2].c_str(), nullptr, 10),
 			strtol(allies["A"][3].c_str(), nullptr, 10));
-		int required = 0;
+
+		int requiredSmart = 0, requiredNormal = 0;
+
 		for (const auto &enemy: enemies) {
 			string *value = enemy.second;
-			required += stoi(value[0]) / 10;
+			if (enemy.first != ENEMY_TOP) {
+				requiredSmart += strtol(value[0].c_str(), nullptr, 10) / 10;
+			}
 		}
+		requiredNormal = (strtol(enemies["X"][0].c_str(), nullptr, 10) / 10) + 4;
+		int required = max(requiredSmart, requiredNormal);
 
 		if (count >= required)
 			isFact = true;
@@ -583,6 +591,26 @@ int main() {
 				}
 				else {
 					output = "R A";
+				}
+			}
+			else if (wayOut == STAY) {
+				// 경로를 찾든 못찾든 일단 도망치기!!!
+				if (isFact) {
+					for (const auto &dir: MOVE) {
+						Pos next = {myTankPos.y + dir.y, myTankPos.x + dir.x};
+						if (0 <= next.y && next.y < map_height && 0 <= next.x && next.x < map_width) {
+							if (map_data[next.y][next.x] == "G") {
+								if (dir.y == -1 && dir.x == 0)
+									output = "U A";
+								else if (dir.y == 1 && dir.x == 0)
+									output = "D A";
+								else if (dir.y == 0 && dir.x == -1)
+									output = "L A";
+								else if (dir.y == 0 && dir.x == 1)
+									output = "R A";
+							}
+						}
+					}
 				}
 			}
 		}
