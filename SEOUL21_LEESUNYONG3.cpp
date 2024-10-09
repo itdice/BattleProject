@@ -413,7 +413,7 @@ string search_n_destroy(node cur)
 
 int main()
 {
-	wstring nickname = L"v6";
+	wstring nickname = L"서울21_이순용";
 	string game_data = init(nickname);
 
 	// while 반복문: 배틀싸피 메인 프로그램과 클라이언트(이 코드)가 데이터를 계속해서 주고받는 부분
